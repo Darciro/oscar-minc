@@ -29,21 +29,29 @@ class Oscar_Minc_Shortcodes
         ), $atts);
 
         ob_start();
-        $post_inscricao = empty($_GET['inscricao']) ? 'new_inscricao' : $_GET['inscricao'];
 
-        $settings = array(
-            'field_groups' => array($atts['form-group-id']),
-            'id' => 'oscar-main-form',
-            'post_id' => $post_inscricao,
-            'new_post' => array(
-                'post_type' => 'inscricao',
-                'post_status' => 'publish'
-            ),
-            'updated_message' => 'Inscrição enviada com sucesso.',
-            'return' => $atts['return'],
-            'submit_value' => 'Salvar dados'
-        );
-        acf_form($settings);
+        if( get_post_meta( $_GET['inscricao'], 'movie_attachment_id', true ) ) :
+
+            echo '<p>Sua inscrição está sendo analisada, não é possível editar os dados.</p>';
+
+        else :
+
+            $post_inscricao = empty($_GET['inscricao']) ? 'new_inscricao' : $_GET['inscricao'];
+
+            $settings = array(
+                'field_groups' => array($atts['form-group-id']),
+                'id' => 'oscar-main-form',
+                'post_id' => $post_inscricao,
+                'new_post' => array(
+                    'post_type' => 'inscricao',
+                    'post_status' => 'publish'
+                ),
+                'updated_message' => 'Inscrição enviada com sucesso.',
+                'return' => $atts['return'],
+                'submit_value' => 'Salvar dados'
+            );
+            acf_form($settings);
+        endif;
 
         return ob_get_clean();
     }
@@ -242,7 +250,7 @@ class Oscar_Minc_Shortcodes
                 <thead>
                 <tr>
                     <th scope="col">#</th>
-                    <th scope="col">Data</th>
+                    <th scope="col">Data de inscrição</th>
                     <th scope="col">Título do filme</th>
                     <th scope="col">Mês/Ano de finalização</th>
                     <th scope="col">Estado</th>
@@ -256,11 +264,20 @@ class Oscar_Minc_Shortcodes
                         <td><?php echo get_the_date(); ?></td>
                         <td><?php echo get_field('titulo_do_filme') ? get_field('titulo_do_filme') : '-'; ?></td>
                         <td><?php echo get_field('mes_ano_de_finalizacao') ? get_field('mes_ano_de_finalizacao') : '-'; ?></td>
-                        <td><b>Filme não enviado<b></td>
+                        <td><b><?php echo get_post_meta( get_the_ID(), 'movie_attachment_id', true ) ? 'Filme enviado' : 'Filme não enviado'; ?><b></td>
                         <td>
-                            <a href="<?php echo home_url('/inscricao') . '?inscricao=' . get_the_ID(); ?>" class="btn btn-primary btn-sm" role="button" data-toggle="tooltip" data-placement="top" title="Editar inscrição">
-                                <i class="fa fa-edit"></i>
-                            </a>
+                            <?php if( !get_post_meta( get_the_ID(), 'movie_attachment_id', true ) ): ?>
+                                <a href="<?php echo home_url('/inscricao') . '?inscricao=' . get_the_ID(); ?>" class="btn btn-primary btn-sm" role="button" data-toggle="tooltip" data-placement="top" title="Editar inscrição">
+                                    <i class="fa fa-edit"></i>
+                                </a>
+                                <a href="<?php echo home_url('/enviar-video') . '?inscricao=' . get_the_ID(); ?>" class="btn btn-primary btn-sm" role="button" data-toggle="tooltip" data-placement="top" title="Enviar filme">
+                                    <i class="fa fa-paper-plane"></i>
+                                </a>
+                            <?php else: ?>
+                                <a href="#" class="btn btn-primary btn-sm" role="button" data-toggle="tooltip" data-placement="top" title="Solicitar suporte">
+                                    <i class="fa fa-question-circle"></i>
+                                </a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php $i++; endwhile; ?>
@@ -275,34 +292,52 @@ class Oscar_Minc_Shortcodes
 
     public function oscar_minc_video_upload_form()
     {
-        $oscar_options = get_option('oscar_options');
-        ob_start(); ?>
+		$oscar_minc_options = get_option('oscar_minc_options');
+        ob_start();
 
-        <p>Tamanho máximo para o arquivo de vídeo: <b>20Gb</b>. Velocidade de conexão mínima sugerida: <b>10Mb</b>.</p>
-        <p>Resolução mínima <b>720p</b>. Formatos permitidos: <b><?php echo $oscar_options['oscar_movie_extensions'] ?></b>.</p>
+        if( !empty($_GET['inscricao']) ): ?>
 
-        <p id="dbi-upload-progress">Please select a file and click "Upload" to continue.</p>
+            <?php if( !get_post_meta( $_GET['inscricao'], 'movie_attachment_id', true ) ): ?>
 
-        <form id="oscar-video-form" method="post" action="<?php echo get_the_permalink() ?>">
-            <div class="form-group text-center video-drag-area dropzone">
-                <input type="file" id="oscar-video" name="oscar-video" class="inputfile" accept=".mp4, .avi">
-                <label id="oscar-video-btn" for="oscar-video"><i class="fa fa-upload"></i> Selecione seu vídeo</label>
-                <p id="oscar-video-name" class="help-block"></p>
-            </div>
-            <div id="upload-status" class="form-group hidden">
-                <div class="progress">
-                    <div class="progress-bar progress-bar-success progress-bar-striped myprogress" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
-                        <span class="sr-only">40% Complete (success)</span>
-                    </div>
+                <p>Filme: <b><?php echo get_post_meta($_GET['inscricao'], 'titulo_do_filme', true)?></b>.</p>
+
+                <div class="alert alert-primary" role="alert">
+                    <p>Tamanho máximo para o arquivo de vídeo: <b><?php echo $oscar_minc_options['oscar_minc_movie_max_size']; ?>Gb</b>. Velocidade de conexão mínima sugerida: <b>10Mb</b>.</p>
+                    <p>Resolução mínima <b>720p</b>. Formatos permitidos: <b><?php echo $oscar_minc_options['oscar_minc_movie_extensions'] ?></b>.</p>
                 </div>
-                <div class="panel panel-default msg"></div>
-            </div>
-            <div class="text-right">
-                <button id="oscar-video-upload-btn" type="submit" class="btn btn-default">Enviar</button>
-            </div>
-        </form>
 
-        <?php return ob_get_clean();
+                <form id="oscar-video-form" method="post" action="<?php echo get_the_permalink() ?>">
+                    <div class="form-group text-center video-drag-area dropzone">
+                        <input type="hidden" id="post_id" name="post_id" value="<?php echo $_GET['inscricao']; ?>">
+                        <input type="hidden" id="movie_max_size" value="<?php echo intval($oscar_minc_options['oscar_minc_movie_max_size']) * pow(1024,3); ?>">
+                        <input type="file" id="oscar-video" name="oscar-video" class="inputfile" accept=".<?php echo str_replace(', ', ', .', $oscar_minc_options['oscar_minc_movie_extensions']); ?>">
+                        <label id="oscar-video-btn" for="oscar-video"><i class="fa fa-upload"></i> Selecione seu vídeo</label>
+                        <p id="oscar-video-name" class="help-block"></p>
+                    </div>
+                    <div id="upload-status" class="form-group hidden">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-success progress-bar-striped myprogress progress-bar-animated" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                                <span class="sr-only">40% Complete (success)</span>
+                            </div>
+                        </div>
+                        <div class="panel panel-default msg"></div>
+                    </div>
+                    <div class="text-right">
+                        <button id="oscar-video-upload-btn" type="submit" class="btn btn-default" disabled>Enviar</button>
+                    </div>
+                </form>
+
+            <?php else: ?>
+                <p>Seu filme foi enviado com sucesso.</p>
+            <?php endif ?>
+
+        <?php else: ?>
+
+            <p>Selecione uma inscrição para enviar o vídeo <a href="<?php echo home_url('/minhas-inscricoes'); ?>">aqui.</a></p>
+
+        <?php endif;
+
+        return ob_get_clean();
     }
 
 }

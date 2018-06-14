@@ -1,24 +1,26 @@
-#oscar-main-form {
+#oscar-main-form .acf-fields{
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
 
+#oscar-main-form .acf-repeater .acf-fields{
+    margin: 0;
 }
 
 #oscar-main-form .acf-fields > .acf-field{
-    padding: 15px 0;
     clear: none;
-}
-
-#oscar-main-form .acf-fields > .acf-field.col-md-4{
-    float: left;
-}
-
-#oscar-main-form .acf-fields > .acf-field.col-md-12{
-    clear: both;
 }
 
 #oscar-main-form .acf-field .acf-label label,
 #oscar-main-form .acf-field .acf-input label{
     font-weight: normal;
     font-size: 14px;
+}
+
+#oscar-main-form .acf-field .acf-label .description {
+    font-size: 12px;
 }
 
 #oscar-main-form .acf-field-message{
